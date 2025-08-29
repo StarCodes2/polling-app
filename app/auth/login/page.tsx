@@ -2,23 +2,34 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/context/AuthContext';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const { signIn } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // This is a placeholder for actual authentication logic
-    console.log('Login attempt with:', { email, password });
-    // Redirect to polls page after login (to be implemented)
-    router.push('/polls/view');
+    setError(null);
+    setIsLoading(true);
+    
+    try {
+      const { error } = await signIn(email, password);
+      if (error) {
+        setError(error.message);
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during sign in');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -31,6 +42,11 @@ export default function LoginPage() {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+              <span className="block sm:inline">{error}</span>
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -54,8 +70,8 @@ export default function LoginPage() {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full">
-            Sign In
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? 'Signing in...' : 'Sign In'}
           </Button>
           <div className="text-center text-sm">
             Don&apos;t have an account?{' '}

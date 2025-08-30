@@ -10,6 +10,8 @@ export const createBrowserClient = () => {
   return createClient(supabaseUrl, supabaseAnonKey);
 };
 
+
+export { createClient };
 // For server components, import these directly in the server component file:
 // import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 // import { cookies } from 'next/headers';

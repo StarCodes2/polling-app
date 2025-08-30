@@ -7,13 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { createPoll } from '@/lib/actions';
 
 export default function CreatePollPage() {
   const router = useRouter();
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
   const [options, setOptions] = useState(['', '']);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const addOption = () => {
     setOptions([...options, '']);
@@ -32,27 +30,12 @@ export default function CreatePollPage() {
     setOptions(newOptions);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
-    // This is a placeholder for actual poll creation logic
-    console.log('Creating poll:', { title, description, options });
-    
-    // Simulate API call delay
-    setTimeout(() => {
-      setIsSubmitting(false);
-      // Redirect to polls view page after creation
-      router.push('/polls/view');
-    }, 1000);
-  };
-
   return (
     <div className="max-w-2xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">Create a New Poll</h1>
       
       <Card>
-        <form onSubmit={handleSubmit}>
+        <form action={createPoll}>
           <CardHeader>
             <CardTitle>Poll Details</CardTitle>
             <CardDescription>
@@ -65,9 +48,8 @@ export default function CreatePollPage() {
               <Label htmlFor="title">Poll Title</Label>
               <Input
                 id="title"
+                name="title"
                 placeholder="Enter a question for your poll"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
                 required
               />
             </div>
@@ -76,9 +58,8 @@ export default function CreatePollPage() {
               <Label htmlFor="description">Description (Optional)</Label>
               <Textarea
                 id="description"
+                name="description"
                 placeholder="Provide additional context for your poll"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
                 rows={3}
               />
             </div>
@@ -88,6 +69,7 @@ export default function CreatePollPage() {
               {options.map((option, index) => (
                 <div key={index} className="flex items-center gap-2">
                   <Input
+                    name="option"
                     placeholder={`Option ${index + 1}`}
                     value={option}
                     onChange={(e) => handleOptionChange(index, e.target.value)}
@@ -125,8 +107,8 @@ export default function CreatePollPage() {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Creating...' : 'Create Poll'}
+            <Button type="submit">
+              Create Poll
             </Button>
           </CardFooter>
         </form>

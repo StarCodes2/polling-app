@@ -43,7 +43,7 @@ export async function createPoll(formData: FormData) {
     }));
 
     const { error: optionsError } = await supabase
-      .from('votes') // 'votes' table is used to store options and their counts
+      .from('options') // 'options' table is used to store poll options
       .insert(voteOptions);
 
     if (optionsError) throw optionsError;

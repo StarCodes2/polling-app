@@ -16,7 +16,7 @@ export async function createPoll(prevState: any, formData: FormData) {
   }
 
   const cookieStore = await cookies();
-  const supabase = createServerActionClient({ cookies: () => cookieStore });
+  const supabase = createServerActionClient({ cookies: async () => cookieStore });
 
   const { data: { user } } = await supabase.auth.getUser();
 

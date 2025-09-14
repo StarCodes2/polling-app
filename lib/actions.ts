@@ -1,58 +1,65 @@
 'use server';
 
-import { createClient } from '@/lib/supabase';
+import { createServerActionClient } from '@supabase/auth-helpers-nextjs';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 
-export async function createPoll(formData: FormData) {
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-
+export async function createPoll(prevState: any, formData: FormData) {
   const title = formData.get('title') as string;
   const description = formData.get('description') as string;
-  const options = formData.getAll('option') as string[];
+  const options: string[] = [];
+  for (let i = 0; ; i++) {
+    const option = formData.get(`option-${i}`);
+    if (option === null) break;
+    options.push(option as string);
+  }
+
+  const cookieStore = await cookies();
+  const supabase = createServerActionClient({ cookies: () => cookieStore });
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, message: 'User not authenticated.' };
+  }
 
   // Basic validation
   if (!title || options.length < 2 || options.some(option => !option)) {
-    // In a real app, you'd handle this more gracefully, e.g., return errors
-    console.error('Validation failed: Title and at least two options are required.');
-    return;
+    return { success: false, message: 'Validation failed: Title and at least two options are required.' };
   }
-
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError || !userData?.user) {
-    console.error('User not authenticated:', userError?.message);
-    redirect('/auth/login'); // Redirect to login if not authenticated
-  }
-
-  const user_id = userData.user.id;
 
   try {
     const { data: poll, error: pollError } = await supabase
       .from('polls')
-      .insert({ title, description, user_id })
+      .insert({ title, description, user_id: user.id })
       .select()
       .single();
 
-    if (pollError) throw pollError;
+    if (pollError) {
+      console.error('Error creating poll:', pollError);
+      return { success: false, message: 'Failed to create poll.' };
+    }
 
-    const poll_id = poll.id;
-
-    const voteOptions = options.map(option => ({
-      poll_id,
+    const pollOptions = options.filter(option => option.trim() !== '').map(option => ({
+      poll_id: poll.id,
       option_text: option,
     }));
 
     const { error: optionsError } = await supabase
-      .from('options') // 'options' table is used to store poll options
-      .insert(voteOptions);
+      .from('poll_options') // 'options' table is used to store poll options
+      .insert(pollOptions);
 
-    if (optionsError) throw optionsError;
+    if (optionsError) {
+      console.error('Error creating poll options:', optionsError);
+      return { success: false, message: 'Failed to create poll options.' };
+    }
 
     revalidatePath('/dashboard'); // Revalidate dashboard to show new poll
-    redirect(`/polls/view/${poll_id}`); // Redirect to the new poll's view page
+    return { success: true, message: 'Poll created successfully!', pollId: poll.id };
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating poll:', error);
-    // In a real app, you'd show a user-friendly error message
+    return { success: false, message: error.message || 'An unexpected error occurred.' };
   }
 }

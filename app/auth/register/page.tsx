@@ -20,8 +20,8 @@ export default function RegisterPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (user) {
-      router.replace('/polls/view'); // Redirect to polls view
+    if (user && router.pathname !== '/polls/view') {
+      router.replace('/polls/view');
     }
   }, [user, router]);
 

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState, useActionState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useFormState, useFormStatus } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +13,16 @@ import { createPoll } from '@/lib/actions';
 export default function CreatePollPage() {
   const router = useRouter();
   const [options, setOptions] = useState(['', '']);
+  const [state, formAction] = useActionState(createPoll, { success: false, message: '' });
+
+  useEffect(() => {
+    if (state.success) {
+      router.push(`/polls/view/${state.pollId}`);
+    } else if (state.message) {
+      // Optionally display error message to the user
+      console.error(state.message);
+    }
+  }, [state, router]);
 
   const addOption = () => {
     setOptions([...options, '']);
@@ -35,7 +46,7 @@ export default function CreatePollPage() {
       <h1 className="text-3xl font-bold mb-6">Create a New Poll</h1>
       
       <Card>
-        <form action={createPoll}>
+        <form action={formAction}>
           <CardHeader>
             <CardTitle>Poll Details</CardTitle>
             <CardDescription>
@@ -44,6 +55,11 @@ export default function CreatePollPage() {
           </CardHeader>
           
           <CardContent className="space-y-6">
+            {state.message && !state.success && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <span className="block sm:inline">{state.message}</span>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="title">Poll Title</Label>
               <Input
@@ -69,7 +85,7 @@ export default function CreatePollPage() {
               {options.map((option, index) => (
                 <div key={index} className="flex items-center gap-2">
                   <Input
-                    name="option"
+                    name={`option-${index}`}
                     placeholder={`Option ${index + 1}`}
                     value={option}
                     onChange={(e) => handleOptionChange(index, e.target.value)}
@@ -107,12 +123,19 @@ export default function CreatePollPage() {
             >
               Cancel
             </Button>
-            <Button type="submit">
-              Create Poll
-            </Button>
+            <SubmitButton />
           </CardFooter>
         </form>
       </Card>
     </div>
+  );
+}
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" aria-disabled={pending}>
+      {pending ? 'Creating Poll...' : 'Create Poll'}
+    </Button>
   );
 }

@@ -18,7 +18,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (user) {
+    if (user && router.pathname !== '/polls/view') {
       router.replace('/polls/view');
     }
   }, [user, router]);
